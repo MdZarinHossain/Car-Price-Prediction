@@ -17,3 +17,297 @@ from sklearn.preprocessing import MinMaxScaler
 from sklearn.ensemble import RandomForestRegressor
 from sklearn.preprocessing import LabelEncoder
 import random
+
+
+# Data Collection and Processing
+
+!gdown --id 1tKlcI7RD6UC0J5H89MnvbfhNkS0IZj86
+
+# loading the data from csv file to pandas data frame
+car_dataset = pd.read_csv('/content/car details v4.csv')
+
+# inspecting the first 5 rows of the data frame
+car_dataset.head()
+print(car_dataset.Make.value_counts())
+
+car_dataset.drop(['Model','Max Power', 'Max Torque', 'Length', 'Width', 'Height', 'Color','Kilometer'], axis=1, inplace = True)
+
+# checking the number of rows and columns
+car_dataset.shape
+
+# # New Section
+
+# getting dataset information
+car_dataset.info()
+
+# checking the number of missing values
+car_dataset.isnull().sum()
+
+car_dataset = car_dataset.dropna(axis=0, how='any')
+car_dataset.info()
+
+car_dataset.isnull().sum()
+
+car_dataset.shape
+
+
+categories = ['Excellent', 'Fine', 'Very Good', 'Good', 'Restorable', 'Parts Car']
+
+def assign_category():
+    return random.choice(categories)
+
+# Add a new column with random categorical values
+car_dataset['Condition'] = car_dataset.apply(lambda x: assign_category(), axis=1)
+
+# Print the updated dataset
+print(car_dataset)
+
+scaler = MinMaxScaler()
+car_dataset['Price'] = scaler.fit_transform(car_dataset[['Price']])
+
+car_dataset.shape
+
+car_dataset.head()
+
+car_dataset['Engine'] = car_dataset['Engine'].str.replace('cc', '')
+car_dataset['Engine'] = car_dataset['Engine'].astype(int)
+
+car_dataset.head()
+
+car_dataset = pd.get_dummies(car_dataset, drop_first = True)
+
+# label_encoder = LabelEncoder()
+# for col in car_dataset.columns:
+#     if car_dataset[col].dtype == 'object':
+#         car_dataset.loc[:, col] = label_encoder.fit_transform(car_dataset.loc[:, col])
+
+car_dataset.head()
+
+X = car_dataset.drop(['Price'],axis=1)
+Y = car_dataset['Price']
+
+
+# CROSS VALIDATION (Linear Regression)
+
+mae_scorer = metrics.make_scorer(metrics.mean_absolute_error, greater_is_better=False)
+
+
+scores = cross_val_score(LinearRegression(), X, Y, cv=10)
+accuracies = cross_val_score(LinearRegression(), X, Y,scoring='neg_root_mean_squared_error', cv=10)
+mae_scores = -cross_val_score(LinearRegression(), X, Y, cv=10, scoring=mae_scorer)
+max_error_scores = -cross_val_score(LinearRegression(), X, Y, cv=10, scoring='neg_mean_squared_log_error')
+
+print("Cross-validation scores:", scores)
+print('\n')
+print("R2 score:", scores.mean())
+print("RMSE score:", -accuracies.mean())
+print("MAE score:", mae_scores.mean())
+print("RMSLE:", max_error_scores.mean())
+
+# Splitting Training and Testing Data
+
+X_train, X_test, Y_train, Y_test = train_test_split(X, Y, test_size = 0.1, random_state = 2)
+
+# Linear Regression
+
+lin_reg_model = LinearRegression()
+
+lin_reg_model.fit(X_train, Y_train)
+
+
+# Model Evaluation
+
+# Prediction on Training Data
+training_data_prediction = lin_reg_model.predict(X_train)
+
+
+# R Squared Error
+error_score = metrics.r2_score(Y_train, training_data_prediction)
+print("R squared Error : ", error_score)
+
+
+# Visualize the actual prices and predicted prices
+
+plt.scatter(Y_train, training_data_prediction)
+plt.xlabel("Actual Price")
+plt.ylabel("Predicted Price")
+plt.title("Actual Prices vs Predicted Prices")
+plt.show()
+
+
+# prediction on Test data
+test_data_prediction = lin_reg_model.predict(X_test)
+
+# R squared Error
+error_score = metrics.r2_score(Y_test, test_data_prediction)
+print("R squared Error : ", error_score)
+
+rmse = sqrt(metrics.mean_squared_error(Y_test,test_data_prediction))
+print("Root Mean squared Error : ", rmse)
+
+mae = sqrt(metrics.mean_absolute_error(Y_test,test_data_prediction))
+print("Max Absolute Error : ", mae)
+
+log_predicted = np.log1p(test_data_prediction)
+log_actual = np.log1p(Y_test)
+
+# Calculate the mean squared error (MSE) between the logarithm of predicted and actual values
+mse = metrics.mean_squared_error(log_actual, log_predicted)
+
+# Calculate the RMSLE score
+rmsle = np.sqrt(mse)
+
+print("Root Mean Squared Logarithmic Error : ", rmsle)
+
+plt.scatter(Y_test, test_data_prediction)
+plt.xlabel("Actual Price")
+plt.ylabel("Predicted Price")
+plt.title(" Actual Prices vs Predicted Prices")
+plt.show()
+
+
+# 2. Decision Tre
+
+# CROSS VALIDATION (Decision Tree)
+
+scores = cross_val_score(DecisionTreeRegressor(), X, Y, cv=10)
+accuracies = cross_val_score(DecisionTreeRegressor(), X, Y,scoring='neg_root_mean_squared_error', cv=10)
+mae_scores = -cross_val_score(DecisionTreeRegressor(), X, Y, cv=10, scoring=mae_scorer)
+max_error_scores = -cross_val_score(DecisionTreeRegressor(), X, Y, cv=10, scoring='neg_mean_squared_log_error')
+
+print("Cross-validation scores:", scores)
+print('\n')
+print("R2 score:", scores.mean())
+print("RMSE score:", -accuracies.mean())
+print("MAE score:", mae_scores.mean())
+print("RMSLE:", max_error_scores.mean())
+
+# loading the linear regression model
+decision_reg_model = DecisionTreeRegressor()
+
+decision_reg_model.fit(X_train,Y_train)
+
+# Model Evaluation
+
+# prediction on Training data
+training_data_prediction = decision_reg_model.predict(X_train)
+
+
+# R squared Error
+error_score = metrics.r2_score(Y_train, training_data_prediction)
+print("R squared Error : ", error_score)
+mse = sqrt(metrics.mean_squared_error(Y_test,test_data_prediction))
+print(" Root Mean squared Error : ", mse)
+
+
+# Visualize the actual prices and Predicted prices
+
+plt.scatter(Y_train, training_data_prediction)
+plt.xlabel("Actual Price")
+plt.ylabel("Predicted Price")
+plt.title(" Actual Prices vs Predicted Prices")
+plt.show()
+
+# prediction on Testing data
+test_data_prediction = decision_reg_model.predict(X_test)
+
+# R squared Error
+error_score = metrics.r2_score(Y_test, test_data_prediction)
+print("R squared Error : ", error_score)
+
+rmse = sqrt(metrics.mean_squared_error(Y_test,test_data_prediction))
+print("Root Mean squared Error : ", rmse)
+
+mae = sqrt(metrics.mean_absolute_error(Y_test,test_data_prediction))
+print("Max Absolute Error : ", mae)
+
+log_predicted = np.log1p(test_data_prediction)
+log_actual = np.log1p(Y_test)
+
+# Calculate the mean squared error (MSE) between the logarithm of predicted and actual values
+mse = metrics.mean_squared_error(log_actual, log_predicted)
+
+# Calculate the RMSLE score
+rmsle = np.sqrt(mse)
+
+print("Root Mean Squared Logarithmic Error : ", rmsle)
+
+
+plt.scatter(Y_test, test_data_prediction)
+plt.xlabel("Actual Price")
+plt.ylabel("Predicted Price")
+plt.title(" Actual Prices vs Predicted Prices")
+plt.show()
+
+
+
+# Random Forest
+
+# CROSS VALIDATION (Random Forest)
+
+rf = RandomForestRegressor(n_estimators=100, max_depth=10, random_state=42)
+scores = cross_val_score(rf, X, Y, cv=10)
+accuracies = cross_val_score(rf, X, Y,scoring='neg_root_mean_squared_error', cv=10)
+mae_scores = -cross_val_score(DecisionTreeRegressor(), X, Y, cv=10, scoring=mae_scorer)
+max_error_scores = -cross_val_score(DecisionTreeRegressor(), X, Y, cv=10, scoring='neg_mean_squared_log_error')
+
+print("Cross-validation scores:", scores)
+print('\n')
+print("R2 score:", scores.mean())
+print("RMSE score:", -accuracies.mean())
+print("MAE score:", mae_scores.mean())
+print("RMSLE:", max_error_scores.mean())
+
+# Random Forest Regression
+
+rf = RandomForestRegressor(n_estimators=100, max_depth=10, random_state=42)
+
+rf.fit(X_train,Y_train)
+
+# Model Evaluation
+
+# prediction on Training data
+training_data_prediction = rf.predict(X_train)
+
+# R squared Error
+error_score = metrics.r2_score(Y_train, training_data_prediction)
+print("R squared Error : ", error_score)
+
+
+# Visualize the actual prices and Predicted prices
+
+plt.scatter(Y_train, training_data_prediction)
+plt.xlabel("Actual Price")
+plt.ylabel("Predicted Price")
+plt.title(" Actual Prices vs Predicted Prices")
+plt.show()
+
+# prediction on Testing data
+test_data_prediction = rf.predict(X_test)
+
+# R squared Error
+error_score = metrics.r2_score(Y_test, test_data_prediction)
+print("R squared Error : ", error_score)
+
+rmse = sqrt(metrics.mean_squared_error(Y_test,test_data_prediction))
+print("Root Mean squared Error : ", rmse)
+
+mae = sqrt(metrics.mean_absolute_error(Y_test,test_data_prediction))
+print("Max Absolute Error : ", mae)
+
+log_predicted = np.log1p(test_data_prediction)
+log_actual = np.log1p(Y_test)
+
+# Calculate the mean squared error (MSE) between the logarithm of predicted and actual values
+mse = metrics.mean_squared_error(log_actual, log_predicted)
+
+# Calculate the RMSLE score
+rmsle = np.sqrt(mse)
+
+print("Root Mean Squared Logarithmic Error : ", rmsle)
+
+plt.scatter(Y_test, test_data_prediction)
+plt.xlabel("Actual Price")
+plt.ylabel("Predicted Price")
+plt.title(" Actual Prices vs Predicted Prices")
+plt.show()
