@@ -58,4 +58,4 @@ Cross-validation (`K=10`) is used to evaluate generalization performance.
 Install the required libraries:
 
 ```bash
-pip install pandas numpy matplotlib seaborn scikit-learn gdown
+pip install pandas numpy seaborn scikit-learn gdown
